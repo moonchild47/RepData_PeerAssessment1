@@ -34,33 +34,36 @@ activity$date <- as.Date(activity$date,"%Y-%m-%d")
 ## What is mean total number of steps taken per day?
 
 ```{r}
-steps_per_day <- aggregate(x = activity$steps,
-                           FUN = sum,
-                           by = list(date = activity$date),
-                           na.rm = TRUE)
+# omit the NA cases
+activity_wo_na <- na.omit(activity)
 
-ggplot(data = steps_per_day, aes(x)) + geom_histogram(binwidth = 500) +
-  xlab("Number of steps") + 
-  ylab(expression("Number of days with this total number of steps"  %+-% 500)) + 
-  ggtitle("Number of days with a certain total number of steps " )
+steps_per_day_wo_na <- aggregate(x = activity_wo_na$steps,
+                                 FUN = sum,
+                                 by = list(date = activity_wo_na$date),
+                                 na.rm = TRUE)
+
+ggplot(data = steps_per_day_wo_na, aes(x)) + geom_histogram(binwidth = 500) +
+   xlab("Number of steps") + 
+   ylab(expression("Number of days with this total number of steps"  %+-% 500)) + 
+   ggtitle("Number of days with a certain total number of steps " )
 
 ```
 
 ```{r}
-mean(steps_per_day$x)
+mean(steps_per_day_wo_na$x)
 ```
 
 ```{r}
-median(steps_per_day$x)
+median(steps_per_day_wo_na$x)
 ```
 
 
 ## What is the average daily activity pattern?
 
 ```{r}
-steps_per_interval <- aggregate(x = activity$steps,
+steps_per_interval <- aggregate(x = activity_wo_na$steps,
                                 FUN = mean,
-                                by = list(interval = activity$interval),
+                                by = list(interval = activity_wo_na$interval),
                                 na.rm = TRUE)
 ggplot(data = steps_per_interval, aes(x = interval, y = x))+
   geom_line() + xlab("number of 5 min time interval") + 
@@ -86,6 +89,10 @@ sum(is.na(activity$steps))
 ```{r}
 # Create an additional column with the mean of each day
 # then go through rows and replace NAs with values from that column
+steps_per_day <- aggregate(x = activity$steps,
+                           FUN = sum,
+                           by = list(date = activity$date))
+
 activity_imputed <- merge(activity,steps_per_day)
 activity_imputed$steps[is.na(activity_imputed$steps)] <- 
   activity_imputed$x[is.na(activity_imputed$steps)] 
@@ -95,10 +102,14 @@ activity_imputed$steps[is.na(activity_imputed$steps)] <-
 ```{r}
 # calculate total number of steps per day again
 
+# remove cases in which there is still NA in the steps column
+# these ones then had no mean with which they could be replaced
+# this means there are whole days missing
+activity_imputed <- activity_imputed[!is.na(activity_imputed$steps),]
+
 steps_per_day_imputed <- aggregate(x = activity_imputed$steps,
                                    FUN = sum,
-                                   by = list(date = activity_imputed$date),
-                                   na.rm = TRUE)
+                                   by = list(date = activity_imputed$date))
 
 ggplot(data = steps_per_day_imputed, aes(x)) + geom_histogram(binwidth = 500) +
   xlab("Number of steps") + 
